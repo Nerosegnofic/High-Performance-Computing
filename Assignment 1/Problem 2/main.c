@@ -16,18 +16,6 @@ void encrypt(const char* input, int size, char* result) {
     }
 }
 
-char take_input_mode() {
-    char input_mode;
-    printf("Choose input mode: C or c for console, F or f for file.\n");
-    do {
-        scanf(" %c", &input_mode);
-        if (input_mode != 'F' && input_mode != 'f' && input_mode != 'C' && input_mode != 'c') {
-            printf("Wrong input. Try again.\n");
-        }
-    } while (input_mode != 'F' && input_mode != 'f' && input_mode != 'C' && input_mode != 'c');
-    return input_mode;
-}
-
 void decrypt(const char* input, int size, char* result) {
     for (int i = 0; i < size; ++i) {
         if (isupper(input[i])) {
@@ -38,6 +26,18 @@ void decrypt(const char* input, int size, char* result) {
             result[i] = input[i];
         }
     }
+}
+
+char take_input_mode() {
+    char input_mode;
+    printf("Choose input mode: C or c for console, F or f for file.\n");
+    do {
+        scanf(" %c", &input_mode);
+        if (input_mode != 'F' && input_mode != 'f' && input_mode != 'C' && input_mode != 'c') {
+            printf("Wrong input. Try again.\n");
+        }
+    } while (input_mode != 'F' && input_mode != 'f' && input_mode != 'C' && input_mode != 'c');
+    return input_mode;
 }
 
 char take_encryption_mode() {
@@ -63,8 +63,8 @@ int main(int argc, char *argv[]) {
     char *output = NULL;
     int size;
 
-    char encryption_mode = take_encryption_mode();
     char input_mode = take_input_mode();
+    char encryption_mode = take_encryption_mode();
 
     if (input_mode == 'C' || input_mode == 'c') {
         printf("Enter the size of your text: ");
