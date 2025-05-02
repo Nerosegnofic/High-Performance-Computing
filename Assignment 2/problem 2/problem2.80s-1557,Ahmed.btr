@@ -1,0 +1,8 @@
+
+problem2:1557 terminated with signal 11 at PC=7fd6124c4149 SP=7ffc30bc9d00.  Backtrace:
+/lib/x86_64-linux-gnu/libc.so.6(+0x67149)[0x7fd6124c4149]
+/lib/x86_64-linux-gnu/libc.so.6(__isoc99_scanf+0xb2)[0x7fd6124bf142]
+./problem2(+0x1530)[0x556732f8a530]
+/lib/x86_64-linux-gnu/libc.so.6(+0x29d90)[0x7fd612486d90]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x80)[0x7fd612486e40]
+./problem2(+0x11e5)[0x556732f8a1e5]

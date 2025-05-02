@@ -1,0 +1,8 @@
+
+problem2:1639 terminated with signal 11 at PC=7faad1e02149 SP=7ffebba0e170.  Backtrace:
+/lib/x86_64-linux-gnu/libc.so.6(+0x67149)[0x7faad1e02149]
+/lib/x86_64-linux-gnu/libc.so.6(__isoc99_scanf+0xb2)[0x7faad1dfd142]
+./problem2(+0x14e3)[0x55b42fdf04e3]
+/lib/x86_64-linux-gnu/libc.so.6(+0x29d90)[0x7faad1dc4d90]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x80)[0x7faad1dc4e40]
+./problem2(+0x1185)[0x55b42fdf0185]
