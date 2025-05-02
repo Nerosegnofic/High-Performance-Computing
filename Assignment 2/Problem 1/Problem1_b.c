@@ -18,13 +18,15 @@ bool is_prime(const int n) {
     return true;
 }
 
-int main(int argc, char** argv) {
+int main(const int argc, char** argv) {
     int rank, size;
     int x, y;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    const double start_time = MPI_Wtime();
 
     if (rank == 0) {
         printf("Enter lower bound (x):");
@@ -62,7 +64,11 @@ int main(int argc, char** argv) {
             MPI_Recv(&received_count, 1, MPI_INT, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             total_count += received_count;
         }
+
+        const double end_time = MPI_Wtime();
+
         printf("Count of prime numbers occurring between %d and %d is: %d\n", x, y, total_count);
+        printf("Execution time (Problem1_b): %f seconds\n", end_time - start_time);
     }
 
     MPI_Finalize();
