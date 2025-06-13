@@ -1,115 +1,109 @@
 #include <stdio.h>
-#include <mpi.h>
 #include <stdlib.h>
+#include <mpi.h>
 
-int *flatten(int **arr, int row, int col) {
-  int *new_arr = (int *) malloc(sizeof(int) * row * col);
-  int ptr = 0;
-  for (int i = 0; i < row; i++) {
-    for (int j = 0; j < col; j++) {
-      new_arr[ptr] = arr[i][j];
-      ptr++;
-    }
-  }
-  return new_arr;
+int* flatten(int **arr, int rows, int cols) {
+    int *flat = (int *) malloc(rows * cols * sizeof(int));
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            flat[i * cols + j] = arr[i][j];
+    return flat;
 }
 
-int **unflatten(int *flat_arr, int row, int col) {
-  int **twoD_arr = (int **) malloc(sizeof(int*) * row);
-  for (int i = 0; i < row; i++)
-    twoD_arr[i] = (int *) malloc(sizeof(int) * col);
-
-  for (int i = 0; i < row; i++) {
-    for (int j = 0; j < col; j++) {
-      twoD_arr[i][j] = flat_arr[i * col + j];
+int** unflatten(int *flat, int rows, int cols) {
+    int **arr = (int **) malloc(rows * sizeof(int*));
+    for (int i = 0; i < rows; i++) {
+        arr[i] = (int *) malloc(cols * sizeof(int));
+        for (int j = 0; j < cols; j++) {
+            arr[i][j] = flat[i * cols + j];
+        }
     }
-  }
-  return twoD_arr;
+    return arr;
 }
 
 int main(int argc, char **argv) {
-  int size, rank;
-  int n, m;
-  int **arr_a, **arr_b, **output_arr;
+    int rank, size;
+    int n, m;
+    int *flat_a = NULL, *flat_b = NULL, *flat_result = NULL;
+    int *sub_a, *sub_b, *sub_result;
 
-  MPI_Init(NULL, NULL);
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  int *flatten_arr_a, *flatten_arr_b, *sub_arr_a, *sub_arr_b, *output_sub_arr, *flatten_output_arr;
+    if (rank == 0) {
+        printf("Enter number of rows and columns: ");
+        scanf("%d%d", &n, &m);
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
+        int **a = (int **) malloc(n * sizeof(int*));
+        int **b = (int **) malloc(n * sizeof(int*));
+        for (int i = 0; i < n; i++) {
+            a[i] = (int *) malloc(m * sizeof(int));
+            b[i] = (int *) malloc(m * sizeof(int));
+        }
 
+        printf("Enter matrix A:\n");
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                scanf("%d", &a[i][j]);
 
-  // input from user
-  if (rank == 0) {
-    printf("Write the number of rows and the number of columns\n");
-    scanf("%d%d", &n, &m);
+        printf("Enter matrix B:\n");
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                scanf("%d", &b[i][j]);
 
-    arr_a = (int **) malloc(sizeof(int*) * n);
-    for (int i = 0; i < n; i++)
-      arr_a[i] = (int *) malloc(sizeof(int) * m);
+        flat_a = flatten(a, n, m);
+        flat_b = flatten(b, n, m);
 
-    arr_b = (int **) malloc(sizeof(int*) * n);
-    for (int i = 0; i < n; i++)
-      arr_b[i] = (int *) malloc(sizeof(int) * m);
+        for (int i = 0; i < n; i++) {
+            free(a[i]);
+            free(b[i]);
+        }
+        free(a);
+        free(b);
 
-    output_arr = (int **) malloc(sizeof(int*) * n);
-    for (int i = 0; i < n; i++)
-      output_arr[i] = (int *) malloc(sizeof(int) * m);
-
-    flatten_arr_a = (int *) malloc(sizeof(int) * n * m);
-    flatten_arr_b = (int *) malloc(sizeof(int) * n * m);
-    
-    flatten_output_arr = (int *) malloc(sizeof(int) * n * m);
-
-    printf("Enter the number of the matrix a\n");
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < m; j++) { 
-        scanf("%d", &arr_a[i][j]);
-      }
+        flat_result = (int *) malloc(n * m * sizeof(int));
     }
 
-    printf("Enter the number of the matrix b\n");
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < m; j++) {
-        scanf("%d", &arr_b[i][j]);
-      }
+    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&m, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    int total_elements = n * m;
+    int chunk = (total_elements + size - 1) / size;
+
+    sub_a = (int *) malloc(chunk * sizeof(int));
+    sub_b = (int *) malloc(chunk * sizeof(int));
+    sub_result = (int *) malloc(chunk * sizeof(int));
+
+    MPI_Scatter(flat_a, chunk, MPI_INT, sub_a, chunk, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(flat_b, chunk, MPI_INT, sub_b, chunk, MPI_INT, 0, MPI_COMM_WORLD);
+
+    for (int i = 0; i < chunk && rank * chunk + i < total_elements; i++) {
+        sub_result[i] = sub_a[i] + sub_b[i];
     }
 
-    flatten_arr_a = flatten(arr_a, n, m);
-    flatten_arr_b = flatten(arr_b, n, m);
-  }
+    MPI_Gather(sub_result, chunk, MPI_INT, flat_result, chunk, MPI_INT, 0, MPI_COMM_WORLD);
 
-  MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&m, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-  sub_arr_a = (int *) malloc(sizeof(int) * (n * m + size - 1) / size);
-  sub_arr_b = (int *) malloc(sizeof(int) * (n * m + size - 1) / size);
-
-  output_sub_arr = (int *) malloc(sizeof(int) * (n * m + size - 1) / size);
-
-  // scatter the array
-  MPI_Scatter(flatten_arr_a, (n * m + size - 1) / size, MPI_INT, sub_arr_a, (n * m + size - 1) / size, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Scatter(flatten_arr_b, (n * m + size - 1) / size, MPI_INT, sub_arr_b, (n * m + size - 1) / size, MPI_INT, 0, MPI_COMM_WORLD);
-
-  // process
-  for (int i = 0; i < (n * m + size - 1) / size; i++) {
-    output_sub_arr[i] = sub_arr_a[i] + sub_arr_b[i];
-  }
-
-  // gather
-  MPI_Gather(output_sub_arr, (n * m + size - 1) / size, MPI_INT, flatten_output_arr, (n * m + size - 1) / size, MPI_INT, 0, MPI_COMM_WORLD);
-
-  if (rank == 0) {
-    output_arr = unflatten(flatten_output_arr, n, m);
-    printf("The result matrix is: \n");
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < m; j++) {
-        printf("%d ", output_arr[i][j]);
-      }
-      printf("\n");
+    if (rank == 0) {
+        int **result = unflatten(flat_result, n, m);
+        printf("Result matrix:\n");
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                printf("%d ", result[i][j]);
+            }
+            printf("\n");
+            free(result[i]);
+        }
+        free(result);
+        free(flat_a);
+        free(flat_b);
+        free(flat_result);
     }
-  }
 
-  MPI_Finalize();
+    free(sub_a);
+    free(sub_b);
+    free(sub_result);
+
+    MPI_Finalize();
+    return 0;
 }
